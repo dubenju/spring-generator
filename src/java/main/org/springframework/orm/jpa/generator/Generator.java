@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,12 +22,31 @@ import org.jdom2.input.SAXBuilder;
 import org.springframework.orm.jpa.generator.model.Column;
 import org.springframework.orm.jpa.generator.model.Schema;
 import org.springframework.orm.jpa.generator.model.Table;
+import org.springframework.orm.jpa.generator.model.TestCase;
+import org.springframework.utils.JDKParser;
+import org.springframework.utils.MethodMdl;
+import org.springframework.utils.SystemDateTime;
 /**
  * @author DBJ
  *
  */
 public class Generator {
+    private static HashMap<String, String> map = null;
+    private static HashMap<String, List<MethodMdl>> mapRMethods = null;
+    private static HashMap<String, List<MethodMdl>> mapRCMethods = null;
+    static {
+        map = new HashMap<String, String>();
 
+        map.put("CHAR", "String");
+        map.put("VARCHAR", "String");
+        map.put("VARCHAR2", "String");
+        map.put("NVARCHAR2", "String");
+        map.put("NUMERIC", "Integer");
+        map.put("DATE", "LocalDateTime");
+
+        mapRMethods = new HashMap<String, List<MethodMdl>>();
+        mapRCMethods = new HashMap<String, List<MethodMdl>>();
+    }
     /**
      * @param args
      */
@@ -56,7 +76,7 @@ public class Generator {
             }
 
             if (xmlPath == null || xmlPath.length() <= 0){
-                xmlPath = "..\\repository\\schema\\sample-schema.xml";
+                xmlPath = "./repository/schema/sample-schema.xml";
                 error_flag = true;
             }
             System.out.println("xmlPath=" + xmlPath);
@@ -85,10 +105,38 @@ public class Generator {
             	throw new Exception("ERROR:\napl xml servletname projectname package name debug");
             }
 
-            Document xml = getJdomDocument(xmlPath);
+            List<String> javaFiles = new ArrayList<String>();
+            File javaFilePath = new File("C:/dao/");
+            if (javaFilePath != null) {
+                File[] javaFileList = javaFilePath.listFiles();
+                for (int index = 0; javaFileList != null && index < javaFileList.length; index ++) {
+                    String strAbsoluteFileName = javaFileList[index].getAbsoluteFile().toString();
+                    if (strAbsoluteFileName.endsWith("ModelRepository.java")) {
+                        String key = strAbsoluteFileName.replaceAll("\\\\", ".");
+                        key = key.replaceAll("src.mail.jara", "");
+                        key = key.replace(".java", "");
+                        mapRMethods.put(key, JDKParser.getMethods(strAbsoluteFileName));
+                        
+                    }
+                    if (strAbsoluteFileName.endsWith("ModelRepositoryCustom.java")) {
+                        String key = strAbsoluteFileName.replaceAll("\\\\", ".");
+                        key = key.replaceAll("src.mail.jara", "");
+                        key = key.replace(".java", "");
+                        mapRCMethods.put(key, JDKParser.getMethods(strAbsoluteFileName));
+                        
+                    }
+                }
+            }
+//            Document xml = getJdomDocument(xmlPath);
+
+            File in = new File(xmlPath);
+            SAXBuilder builder = new SAXBuilder();
+            Document xml = builder.build(in);
+            System.out.println("read xml file end.");
             Schema schema = docFormatToList(xml, projectName, projectPackage);
             // TODO:lombock的toString可能有递归的问题
             //System.out.println(schema);
+            System.out.println("parse xml file end.");
 
             if (!debug_flag) {
                 makeSource(servletName, schema);
@@ -145,6 +193,10 @@ public class Generator {
             tbl.setColumns(new ArrayList<Column>());
             tbl.setPrimaryKeys(new ArrayList<Column>());
             tbl.setName(eleTable.getAttributeValue("name"));
+            tbl.setFullName(eleTable.getAttributeValue("fullName"));
+            tbl.setDataType(false);
+            tbl.setBigDecimalType(false);
+            tbl.setDataTypePk(false);
             System.out.println(tbl.getName());
 
             //*******************
@@ -157,13 +209,32 @@ public class Generator {
                 Column column = new Column();
                 column.setTable(tbl);
                 column.setElement(eleColumn);
+                column.setName(eleColumn.getAttributeValue("name"));
+                String type = eleColumn.getAttributeValue("type");
+                System.out.println("type=" + type);
+                column.setType(type);
+                String size = eleColumn.getAttributeValue("size");
+                column.setSize(size);
+                column.setFullName(eleColumn.getAttributeValue("fullName"));
+                column.setDescription(eleColumn.getAttributeValue("description"));
 
-                tbl.getColumns().add(column);
                 Attribute primaryKey = eleColumn.getAttribute("primaryKey");
                 if (primaryKey != null && "true".equalsIgnoreCase(primaryKey.getValue())) {
                     tbl.getPrimaryKeys().add(column);
+                    if ("DATE".equalsIgnoreCase(type)) {
+                        tbl.setDataTypePk(true);
+                    }
+                } else {
+                    tbl.getColumns().add(column);
+                    if ("DATE".equalsIgnoreCase(type)) {
+                        tbl.setDataType(true);
+                    }
+                    if ("NUMERIC".equalsIgnoreCase(type) && size.indexOf(",") > 0) {
+                        tbl.setBigDecimalType(true);
+                    }
                 }
             } // iterColumns
+            tbl.setTestCases(makeTestCase(tbl));
             schema.getTables().add(tbl);
         } // iterTables
 
@@ -171,6 +242,40 @@ public class Generator {
     }
     
 
+    private static List<TestCase> makeTestCase(Table tbl) {
+        String sysDate = SystemDateTime.getDateTime();
+        List<TestCase> result = new ArrayList<TestCase>();
+        result.add(new TestCase("001", "count", "001", "テーブルの既存内容に影響がないことを確認するために、テスト実施前、対象テーブルの件数情報を取得する。（R処理）", "対象テーブル「」の件数は０件以上になっていること。", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("002", "delete", "001", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("003", "findById", "001", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("004", "exists", "001", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("005", "save", "001", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("006", "findById", "002", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("007", "exists", "002", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("008", "save", "002", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("009", "delete", "002", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        result.add(new TestCase("010", "count", "002", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+        
+        String key1 = tbl.getSchema().getPackageName() + "dao." + tbl.getTableId() + "ModelRepository";
+        List<MethodMdl> methods1 = mapRMethods.get(key1);
+        int cnt = 101;
+        if (methods1 != null) {
+            for (MethodMdl method : methods1) {
+                result.add(new TestCase("" + cnt, method.getMethodName(), "001", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+                cnt ++;
+            }
+        }
+        String key2 = tbl.getSchema().getPackageName() + "dao." + tbl.getTableId() + "ModelRepositoryCustom";
+        List<MethodMdl> methods2 = mapRCMethods.get(key2);
+        cnt = 201;
+        if (methods2 != null) {
+            for (MethodMdl method : methods2) {
+                result.add(new TestCase("" + cnt, method.getMethodName(), "001", "", "", "Junit", "OK", sysDate, "BSJ", ""));
+                cnt ++;
+            }
+        }
+        return result;
+    }
     /**
      * makeSource
      *
@@ -182,9 +287,28 @@ public class Generator {
 
         Velocity.init();
         VelocityContext context = new VelocityContext();
+        //******************
+        // makeDir
+        //******************
+        String strModelDir = makeDirPath("Model", servletName, schema);
+        makeDir(strModelDir);
+        System.out.println(strModelDir);
+        String strModelIdDir = makeDirPath("ModelId", servletName, schema);
+        makeDir(strModelIdDir);
+        System.out.println(strModelIdDir);
+        String strModelRepositoryDir = makeDirPath("ModelRepository", servletName, schema);
+        makeDir(strModelRepositoryDir);
+        System.out.println(strModelRepositoryDir);
+        String strModelRepositoryTestDir = makeDirPath("ModelRepositoryTest", servletName, schema);
+        makeDir(strModelRepositoryTestDir);
+        System.out.println(strModelRepositoryTestDir);
+        String strTestCaseDir = makeDirPath("TestCase", servletName, schema);
+        makeDir(strTestCaseDir);
+        System.out.println(strTestCaseDir);
 
         // Tables
         List<Table> tables = schema.getTables();
+        makeFile("./repository/templates/AllRepositoryTests.vm", tables, strModelRepositoryTestDir + "/AllRepositoryTests.java", context);
         for (int h = 0; h < tables.size(); h++) {
             Table table = (Table) tables.get(h);
             System.out.println("Table(" + (h + 1) + ")=" + table.getName());
@@ -192,21 +316,37 @@ public class Generator {
             //******************
             // makeDir
             //******************
-            String strCsvVmDir   = makeDirPath("CSV",     servletName, useCase);
-            makeDir(strCsvVmDir);
+            String strTestCaseSubDir   = strTestCaseDir + table.getTableId() + "ModelRepository_テストケース.files/";
+            makeDir(strTestCaseSubDir);
+            System.out.println(strTestCaseSubDir);
 
 
             //******************
             //  makeFile
             //******************
             // Model
-            makeFile("templates/Model.vm", download, strCsvVmDir   + "/" + download.getDownloadID() + "Model.java", context);
+            makeFile("./repository/templates/Model.vm", table, strModelDir   + "/" + getIdFromName(table.getName()) + "Model.java", context);
             // ModelId
-            makeFile("templates/ModelId.vm", download, strCsvVmDir   + "/" + download.getDownloadID() + "ModelId.java", context);
-            // Repositor
-            makeFile("templates/Repositor.vm", download, strCsvVmDir   + "/" + download.getDownloadID() + "Repositor.java", context);
-            // Repositor
-            makeFile("templates/RepositorCustom.vm", download, strCsvVmDir   + "/" + download.getDownloadID() + "RepositorCustom.java", context);
+            makeFile("./repository/templates/ModelId.vm", table, strModelIdDir   + "/" + getIdFromName(table.getName()) + "ModelId.java", context);
+            // ModelRepositorCustom
+            context.put("methods200", mapRCMethods);
+            makeFile("./repository/templates/ModelRepositoryCustom.vm", table, strModelRepositoryDir   + "/" + getIdFromName(table.getName()) + "ModelRepositoryCustom.java", context);
+            // ModelRepository
+            context.put("methods100", mapRMethods);
+            makeFile("./repository/templates/ModelRepository.vm", table, strModelRepositoryDir   + "/" + getIdFromName(table.getName()) + "ModelRepository.java", context);
+            // ModelRepositoryImpl
+            makeFile("./repository/templates/ModelRepositoryImpl.vm", table, strModelRepositoryDir   + "/" + getIdFromName(table.getName()) + "ModelRepositoryImpl.java", context);
+            // ModelRepositoryTest
+            makeFile("./repository/templates/ModelRepositoryTests.vm", table, strModelRepositoryTestDir   + "/" + getIdFromName(table.getName()) + "ModelRepositoryTest.java", context);
+
+            // TestCase
+            makeFile("./repository/templates/Testcase.vm", table, strTestCaseDir + getIdFromName(table.getName()) + "ModelRepository_テストケース.htm", context, "SJIS");
+            makeFile("./repository/templates/TestcaseSub01.vm", table, strTestCaseSubDir + getIdFromName(table.getName()) + "filelist.xml", context, "SJIS");
+            makeFile("./repository/templates/TestcaseSub02.vm", table, strTestCaseSubDir + getIdFromName(table.getName()) + "sheet001.htm", context, "SJIS");
+            makeFile("./repository/templates/TestcaseSub03.vm", table, strTestCaseSubDir + getIdFromName(table.getName()) + "sheet002.htm", context, "SJIS");
+            makeFile("./repository/templates/TestcaseSub04.vm", table, strTestCaseSubDir + getIdFromName(table.getName()) + "stylesheet.css", context, "SJIS");
+            makeFile("./repository/templates/TestcaseSub05.vm", table, strTestCaseSubDir + getIdFromName(table.getName()) + "tabstrip.htm", context, "SJIS");
+            
         } // Tables
     }
 
@@ -218,48 +358,30 @@ public class Generator {
      * @return (String) Path
      * @throws Exception
      */
-    private static String makeDirPath(String Pl, String servletName, UseCase useCase) throws Exception {
-        String plDirPath = "";
+    private static String makeDirPath(String type, String servletName, Schema schema) throws Exception {
+        String strDirPath = "";
 
-        SubSystem subSystem = useCase.getSubSystem();
-        BasePackage basePackage = subSystem.getBasePackage();
-        Project project = basePackage.getProject();
+        String packageName = schema.getPackageName();
+        packageName = packageName.replace('.',  '/');
+ 
 
-        String projectPackage = project.getProjectPackage();
-        projectPackage = projectPackage.replace('.','/');
-
-        String usecasePackage = useCase.getUsecasePackage();
-        if (usecasePackage == null || usecasePackage.length() <= 0){
-            usecasePackage = "";
-        }else{
-            usecasePackage = usecasePackage.replace('.','/');
+        if("Model".equals(type)) {
+            strDirPath = "output/" + servletName + "/src/main/java/" + packageName.toLowerCase() + "/entity/";
+        } else if ("ModelId".equals(type)) {
+            strDirPath = "output/" + servletName + "/src/main/java/" + packageName.toLowerCase() + "/entity/pk/";
+        }else if ("ModelRepositoryCustom".equals(type)){
+            strDirPath = "output/" + servletName + "/src/main/java/" + packageName.toLowerCase() + "/repository/";
+        }else if ("ModelRepository".equals(type)){
+            strDirPath = "output/" + servletName + "/src/main/java/" + packageName.toLowerCase() + "/repository/";
+        }else if ("RepositoryImpl".equals(type)){
+            strDirPath = "output/" + servletName + "/src/main/java/" + packageName.toLowerCase() + "/repository/";
+        }else if ("ModelRepositoryTest".equals(type)){
+            strDirPath = "output/" + servletName + "/src/test/java/" + packageName.toLowerCase() + "/repository/";
+        } else if("TestCase".equals(type)) {
+            strDirPath = "output/" + servletName + "/testcase/";
         }
 
-        if(Pl.equals("System")) {
-            plDirPath = "output/" + servletName + "/" + "WEB-INF/src/java/" + projectPackage + basePackage.getName() + "/" + "modules/system/" + subSystem.getName() + "/" + usecasePackage + useCase.getName().toLowerCase();
-        } else if (Pl.equals("Action")) {
-            plDirPath = "output/" + servletName + "/WEB-INF/src/java/" + projectPackage + basePackage.getName() + "/modules/actions/" + subSystem.getName() + "/" + usecasePackage + useCase.getName().toLowerCase();
-
-        }else if (Pl.equals("Object")){
-            plDirPath = "output/" + servletName + "/WEB-INF/src/java/" + projectPackage + basePackage.getName() + "/modules/objects/" + subSystem.getName() + "/" + usecasePackage + useCase.getName().toLowerCase();
-
-        }else if (Pl.equals("Screen")){
-            plDirPath = "output/" + servletName + "/WEB-INF/src/java/" + projectPackage + basePackage.getName() + "/modules/screens/" + subSystem.getName() + "/" + usecasePackage + useCase.getName().toLowerCase();
-
-        }else if (Pl.equals("JS")){
-            plDirPath = "output/" + servletName + "/resources/ui/skins/" + basePackage.getName() + "/images/" + subSystem.getName() + "/" + usecasePackage + useCase.getName().toLowerCase();
-
-        }else if (Pl.equals("VM")){
-            plDirPath = "output/" + servletName + "/templates/" + basePackage.getName() + "/screens/" + subSystem.getName() + "/" + usecasePackage + useCase.getName().toLowerCase();
-        } else if(Pl.equals("PDF")) {
-            plDirPath = "output/" + servletName + "/" + "templates/" + project.getName() + "/" + "screens/" + subSystem.getName() + "/download/pdf";
-        } else if(Pl.equals("EXCEL")) {
-            plDirPath = "output/" + servletName + "/" + "templates/" + project.getName() + "/" + "screens/" + subSystem.getName() + "/download/excel";
-        } else if(Pl.equals("CSV")) {
-            plDirPath = "output/" + servletName + "/" + "templates/" + project.getName() + "/" + "screens/" + subSystem.getName() + "/download/csv";
-        }
-
-        return plDirPath;
+        return strDirPath;
     }
 
     /**
@@ -283,28 +405,35 @@ public class Generator {
      */
     private static void makeFile(String vmPath, Object obj, String filePath,
             VelocityContext context) throws Exception {
+        makeFile(vmPath, obj, filePath, context, "UTF8");
+    }
+    private static void makeFile(String vmPath, Object obj, String filePath,
+            VelocityContext context, String charsetName) throws Exception {
         org.apache.velocity.Template tmpVm;
         try {
-            tmpVm = Velocity.getTemplate(vmPath, "SJIS");
+            tmpVm = Velocity.getTemplate(vmPath, charsetName);
         } catch ( ResourceNotFoundException re ) {
+            System.out.println("Template file is not exist!" + re);
             return;
         } catch ( Exception e ) {
             throw e;
         }
 
-        if(obj instanceof DownLoad) {
-            context.put("download", obj);
-        } else if ( obj instanceof Template ){
-            context.put("template", obj);
-        } else if ( obj instanceof UseCase ){
-            context.put("useCase", obj);
-            context.put("subSystem", ((UseCase)obj).getSubSystem());
+        if(obj instanceof Table) {
+            context.put("table", obj);
+        } else if ( obj instanceof List ){
+            context.put("tables", obj);
+            @SuppressWarnings("unchecked")
+            List<Table> list = (List<Table>) obj;
+            if (list.size() > 0) {
+                context.put("table", list.get(0));
+            }
         }
         System.out.println("@_@obj=" + obj.toString());
         System.out.println("@_@vmPath=" + vmPath);
         System.out.println("@_@filePath=" + filePath);
         System.out.println("");
-        
+
         StringWriter sw = new StringWriter();
         tmpVm.merge( context, sw );
 
@@ -313,4 +442,69 @@ public class Generator {
         fw.close();
         sw.close();
     }
+    public static String getIdFromName(String name) {
+        if (name == null) {
+            System.out.println("name=" + name);
+            return null;
+        }
+        String lower = name.toLowerCase();
+        String upper = name.toUpperCase();
+        StringBuffer buf = new StringBuffer();
+        int len = name.length();
+        int flag = 0;
+        char ch = 0;
+        for (int idx = 0; idx < len; idx ++) {
+            if (idx == 0) {
+                flag = 1;
+            }
+            ch = name.charAt(idx);
+            if (ch == '_') {
+                flag = 1;
+                continue;
+            }
+            if (flag == 1) {
+                buf.append(upper.charAt(idx));
+            } else {
+                buf.append(lower.charAt(idx));
+            }
+            flag = 0;
+        }
+        System.out.println("name=" + name + ",result=" + buf);
+        return buf.toString();
+    }
+    public static String getVarFromName(String name) {
+        if (name == null) {
+            System.out.println("name=" + name);
+            return null;
+        }
+        String lower = name.toLowerCase();
+        String upper = name.toUpperCase();
+        StringBuffer buf = new StringBuffer();
+        int len = name.length();
+        int flag = 0;
+        char ch = 0;
+        for (int idx = 0; idx < len; idx ++) {
+            ch = name.charAt(idx);
+            if (ch == '_') {
+                flag = 1;
+                continue;
+            }
+            if (flag == 1) {
+                buf.append(upper.charAt(idx));
+            } else {
+                buf.append(lower.charAt(idx));
+            }
+            flag = 0;
+        }
+        System.out.println("name=" + name + ",result=" + buf);
+        return buf.toString();
+    }
+    public static String getType(String type) {
+        String res = map.get(type);
+        if (res == null | res.length() <= 0) {
+            System.out.println("------" + type);
+        }
+        return res;
+    }
 }
+

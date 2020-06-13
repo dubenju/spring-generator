@@ -1,0 +1,39 @@
+package $!{view.gyomu.Project.PackageName}controller.web.$!{gyomu.FnctionId};
+
+#if("$!{view.Control}" == "Controller")
+import org.springframework.stereotype.Controller;
+#else
+import org.springframework.web.bind.annotation.RestController;
+#end
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+#if("$!{view.Control}" == "RestController")import org.springframework.web.bind.annotation.ResponseBody;
+#end
+
+import $!{view.gyomu.Project.PackageName}controller.bean.$!{view.gyomu.FnctionId}.$!{view.ViewId}Form;
+
+#foreach($event in ${view.events})
+import $!{view.gyomu.Project.PackageName}model.bean.$!{view.gyomu.FnctionId}.$!{view.ViewId}$!{event.Varname}InputBean;
+import $!{view.gyomu.Project.PackageName}model.bean.$!{view.gyomu.FnctionId}.$!{view.ViewId}$!{event.Varname}OutputBean;
+#end
+
+@$!{view.Control}
+public class $!{view.ViewId}$!{view.Control} extends $!{view.gyomu.FnctionId}Controller {
+    protected String getWindowId() {
+        return $!{view.ViewId}_ID;
+    }
+#foreach($event in ${view.events})
+    @RequestMapping(value = $!{view.ViewId}_URL#if("$!{event.Value}" != "") + "$!{event.Value}"#end#if("$!{event.Method}" != ""), method = RequestMethod.$!{event.Method}#end)
+#if("$!{view.Control}" == "RestController")    @ResponseBody
+#end
+    public String $!{event.Name}(Model model, $!{view.ViewId}Form form) {
+        String chkRet = initCommon(model, form, WindowType.LIST);
+        if (chkRet != ACCESS_CHK_OK) {
+            return chkRet;
+        }
+        model.addAttribute("form", form);
+        return getSelfTransferURL();
+    }
+#end
+}

@@ -1,0 +1,30 @@
+spring.profiles.active=ndev
+
+server.session.timeout=259200
+server.servlet.session.timeout=259200
+
+apl.session.timeout=7200
+apl.content.version=000000
+spring.thymeleaf.mode=LEGACYHTML5
+spring.thymeleaf.cache=false
+spring.thymeleaf.encoding=UTF-8
+
+#logging.level.org.hibernate.SQL=debug
+#logging.level.org.hibernate.type.descriptor.sql.BasizBinder=trace
+#logging.level.org.hibernate.type.EnumType=trace
+#spring.jpa.show-sql=true
+#spring.jpa.hibernate.ddl.auto=update
+#spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
+#jpa.hibernate.show-sql=true
+#jpa.hibernate.format-sql=true
+#spring.jpa.properties.hibernate.show_sql=true
+#spring.jpa.properties.hibernate.user_sql_comments=false
+#spring.jpa.properties.hibernate.format_sql=false
+
+#foreach($gyomu in $gyomus)
+#foreach($view in $gyomu.Views)
+#foreach($prop in $view.Props)
+$!{view.ViewId}.$!{prop.Key}=$!{prop.Value}
+#end
+#end
+#end

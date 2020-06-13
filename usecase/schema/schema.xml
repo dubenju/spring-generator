@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project package="com.apl.test">
+    <gyomu FnctionId="TEST0001" FnctionName="テスト" extends="com.apl.test.model.service.AbstractService">
+        <view viewId="TEST0001S01" viewName="テスト画面" control="Controller">
+            <event name="index" value="index" method="GET" index="" />
+            <event name="search" value="search" method="POST" index="" />
+            <prop name="search.limit" value="100" />
+            <subView control="RestController">
+                <event name="decline" value="decline" method="POST" index="" />
+            </subView>
+        </view>
+        <view viewId="TEST0001S02" viewName="REST画面" control="RestController">
+            <event name="index" value="index" method="POST" index="" />
+            <event name="update" value="update" method="POST" index="" />
+            <prop name="permission" value="01,02,03,05" />
+        </view>
+    </gyomu>
+</project>

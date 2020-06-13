@@ -1,0 +1,12 @@
+package $!{table.Schema.PackageName}repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import $!{table.Schema.PackageName}entity.$!{table.TableId}Model;
+import $!{table.Schema.PackageName}entity.pk.$!{table.TableId}ModelId;
+
+@Repository
+public interface $!{table.TableId}ModelRepository extends JpaRepository<$!{table.TableId}Model, $!{table.TableId}ModelId>, $!{table.TableId}ModelRepositoryCustom, JpaSpecificationExecutor<$!{table.TableId}Model> {
+}

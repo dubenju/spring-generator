@@ -1,0 +1,7 @@
+package $!{table.Schema.PackageName}repository;
+
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class $!{table.TableId}ModelRepositoryImpl implements  $!{table.TableId}ModelRepositoryCustom {
+}

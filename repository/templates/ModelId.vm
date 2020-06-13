@@ -1,0 +1,16 @@
+package $!{table.Schema.PackageName}entity.pk;
+
+import java.io.Serializable;
+
+import javax.persistence.Column;
+
+import lombok.Data;
+
+@Data
+public class $!{table.TableId}ModelId implements Serializable {
+    private static final long serialVersionUID = 1L;
+#foreach($col in $!{table.PrimaryKeys})
+    @Column(name="$!{col.Name}")
+    private $!{col.JavaType} $!{col.ColumnVar};
+#end
+}

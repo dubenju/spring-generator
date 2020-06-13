@@ -1,0 +1,13 @@
+package $!{table.Schema.PackageName}repository;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
+
+@RunWith(Suite.class)
+#set($cnt=0)
+@SuiteClasses({#foreach($table in $tables)
+ $!{table.TableId}ModelRepositoryTest.class#if($!cnt < ($!tables.size() - 1)),#end#set($cnt=$cnt+1)#end
+})
+public class AllRepositoryTests {
+}

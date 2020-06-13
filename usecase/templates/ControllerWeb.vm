@@ -1,0 +1,20 @@
+package $!{gyomu.Project.PackageName}controller.web.$!{gyomu.FnctionId};
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+
+import $!{gyomu.Project.PackageName}controller.web.BaseController;
+import $!{gyomu.Project.PackageName}model.service.$!{gyomu.FnctionId}.$!{gyomu.FnctionId}Service;
+
+@Controller
+abstract public class $!{gyomu.FnctionId}Controller extends BaseController {
+    @Autowired
+    protected $!{gyomu.FnctionId}Service $!{gyomuFnctionId.toLowerCase()}Service;
+    
+    public $!{gyomu.FnctionId}Controller() {
+    }
+
+    protected String getFnctionId() {
+        return $!{gyomu.FnctionId}_ID;
+    }
+}

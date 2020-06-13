@@ -1,0 +1,11 @@
+package $!{view.gyomu.Project.PackageName}controller.bean.$!{view.gyomu.FnctionId};
+
+import $!{view.gyomu.Project.PackageName}controller.bean.BaseForm;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Data
+@EqualsAndHashCode(callSuper=true)
+public class $!{view.ViewId}Form extends BaseForm {
+}

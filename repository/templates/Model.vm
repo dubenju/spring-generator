@@ -1,0 +1,25 @@
+package $!{table.Schema.PackageName}entity;
+
+import java.io.Serializable;
+
+import javax.persistence.Column;
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+import $!{table.Schema.PackageName}entity.pk.$!{table.TableId}ModelId;
+
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name="$!{table.Name}")
+public class $!{table.TableId}Model implements Serializable, CmnColumn {
+    private static final long serialVersionUID = 1L;
+    @EmbeddedId
+    private $!{table.TableId}ModelId id;
+    #foreach($col in $!{table.Columns})
+        @Column(name="$!{col.Name}")
+        private $!{col.JavaType} $!{col.ColumnVar};
+    #end
+}

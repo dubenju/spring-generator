@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html th:with="lang=ja" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<th:block th:replace="CmnHeader :: ud(title='$!{view.ViewName}')"></th:block>
+<th:block th:replace="CmnInput :: ud"></th:block>
+<th:block th:replace="CmnErrMsg :: ud"></th:block>
+<script type="text/javascript" th:src="@{/js/$!{view.gyomu.FnctionId}/$!{view.ViewId}.js} + '?v=' + ${@environment.getProperty('apl.content.version')}"></script>
+</head>
+<body>
+    <div id="contents" class="container">
+        <div id="selectedTenpoArea" class="flex container">
+            <div>$!{view.ViewName}</div>
+            <div  class="posR">
+                <div></div>
+                <div>
+                    <button class="btn btn-sz-m btn-cl-gray bt-menu btn-end" onClick="end();" tabindex="99" data-orgtabindex="99">終了 F12</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

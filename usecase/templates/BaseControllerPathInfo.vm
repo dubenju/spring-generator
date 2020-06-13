@@ -1,0 +1,12 @@
+package $!{gyomu.Project.PackageName}controller.web;
+
+public interface BaseControllerPathInfo {
+#foreach($gyomu in $gyomus)
+
+    public static final String $!{gyomu.FnctionId}_ID = "$!{gyomu.FnctionId}";
+#foreach($view in $gyomu.Views)
+    public static final String $!{view.ViewId}_ID = "$!{view.ViewId}";
+    public static final String $!{view.ViewId}_URL = "/" + $!{gyomu.FnctionId}_ID + "/" + $!{view.ViewId}_ID + "/";
+#end
+#end
+}

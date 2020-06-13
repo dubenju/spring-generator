@@ -1,0 +1,13 @@
+package $!{gyomu.Project.PackageName}model.service.$!{gyomu.FnctionId};
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import $!{gyomu.Project.PackageName}model.bean.$!{gyomu.FnctionId}.$!{gyomu.FnctionId}S01IndexInputBean;
+import $!{gyomu.Project.PackageName}model.bean.$!{gyomu.FnctionId}.$!{gyomu.FnctionId}S01IndexOutputBean;
+#if("$!{gyomu.ExtendsClass}" != "")import $!{gyomu.Project.PackageName}model.service.AbstractService;
+#end
+
+@Service
+public class $!{gyomu.FnctionId}Service#if("$!{gyomu.ExtendsClass}" != "") extends AbstractService#end {
+}

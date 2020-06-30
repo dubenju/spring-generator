@@ -1,15 +1,16 @@
 package $!{table.Schema.PackageName}repository;
 
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -17,8 +18,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Example;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import $!{table.Schema.PackageName}entity.$!{table.TableId}Model;
+import $!{table.Schema.PackageName}entity.pk.$!{table.TableId}ModelId;
+
+/**
+ * $!{table.FullName}のRepositoryテストクラスです。
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @FixMethodOrder(value = MethodSorters.NAME_ASCENDING )
@@ -28,44 +36,38 @@ public class $!{table.TableId}ModelRepositoryTest {
     @Autowired
     private $!{table.TableId}ModelRepository $!{table.TableVar}ModelRepository;
 
+    private $!{table.TableId}Model model = new $!{table.TableId}Model();
+    private $!{table.TableId}ModelId modelid = new $!{table.TableId}ModelId();
+    private $!{table.TableId}Model modelName = new $!{table.TableId}Model();
+    private Example<$!{table.TableId}Model> example = Example.of(model);
+    private Example<$!{table.TableId}Model> exampleName = Example.of(modelName);
+    private static long cntBef = -1L;
+    private static long cntAft = -1L;
+
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         LOGGER.info("$!{table.TableId}ModelRepositoryTest Begin");
-    }
-    @BeforeAll
-    static void beforeAll() {
-        LOGGER.info("$!{table.TableId}ModelRepositoryTest  beforeAll()");
     }
 
     @Before
     public void setUp() throws Exception {
         Thread.sleep(2000);
-    }
-    @BeforeEach
-    void beforeEach() {
-        LOGGER.info("call beforeEach()");
-    }
-    
-
-    @After
-    public void tearDown() throws Exception {
-        
-    }
-    @AfterEach
-    void afterEach() {
-        LOGGER.info("call afterEach()");
+        // TODO:INSERTするデータを設定してください。
+#foreach($col in $!{table.PrimaryKeys})
+        this.modelid.set$!{col.ColumnId}(#if($!{col.JavaType}=="String")""#else
+null#end);
+#end
+        this.model.setId(this.modelid);
+#foreach($col in $!{table.Columns})
+        this.model.set$!{col.ColumnId}(#if($!{col.JavaType}=="String")""#else
+null#end);
+#end
+        modelName.setTestName("");
     }
 
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        LOGGER.info("$!{table.TableId}ModelRepositoryTest end.");
-    }
-
-    @AfterAll
-    static void afterAll() {
-        LOGGER.info("call afterAll()");
-    }
-
+    /**
+     * ステップ000 init
+     */
     @Test
     public void test_000_init_000() {
         LOGGER.info("test_000_init_000");
@@ -73,19 +75,341 @@ public class $!{table.TableId}ModelRepositoryTest {
         ClassProperties.getProperties($!{table.TableVar}ModelRepository);
         LOGGER.info("$!{table.TableId}ModelRepositoryTest begin");
     }
+
+    /**
+     * ステップ001 count
+     */
     @Test
-    public void succeedingTest() {
-        LOGGER.info("call succeedingTest()");
+    public void test_001_count_001() {
+        LOGGER.info("test_001_count_001 001-001-001【予想】SELECT COUNT(*) FROM $!{table.Name};");
+        cntBef = $!{table.TableVar}ModelRepository.count();
+        Assert.assertTrue(cntBef >= 0L);
+
+        #set($cnt=0)
+        LOGGER.info("test_001_count_001 001-001-002【予想】SELECT COUNT(#foreach($col in $!{table.PrimaryKeys})$col.Name#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)#end) FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) AND #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        long cntBefModel = $!{table.TableVar}ModelRepository.count(this.example);
+        Assert.assertTrue(cntBefModel >= 0L);
     }
+
+    /**
+     * ステップ002 delete
+     */
     @Test
-    public void failingTest() {
-        LOGGER.info("call failingTest()");
-        // fail("a failing test");
+    public void test_002_delete_001() {
+        LOGGER.info("test_002_delete_001 002-001-001【予想】DELETE FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end;");
+        /* 存在しない場合、データをinsertして、deleteする。 */
+        $!{table.TableVar}ModelRepository.delete(model);
     }
+
+    /**
+     * ステップ003 findById
+     */
+    @Test(expected=NoSuchElementException.class)
+    public void test_003_findById_001() {
+        LOGGER.info("test_003_findById_001 003-001-001【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #foreach($col in $!{table.PrimaryKeys})$col.Name = ? #if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        Optional<$!{table.TableId}Model> opBef = $!{table.TableVar}ModelRepository.findById(this.modelid);
+        /* nullの場合、NoSuchElementExceptionが発生する。 */
+        $!{table.TableId}Model bef = opBef.get();
+        Assert.assertNull(bef);
+
+        LOGGER.info("test_003_findById_002 003-001-002【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($!table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) AND #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})#col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        List<$!{table.TableId}Model> findAll = $!{table.TableVar}ModelRepository.findAll(this.example);
+        Assert.assertTrue(findAll.size() ==0);
+    }
+
+    /**
+     * ステップ004 exists
+     */
+    @Test
+    public void test_004_exists_001() {
+        LOGGER.info("test_004_exists_001 004-001-001【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #foreach($col in $!{table.PrimaryKeys})$col.Name = ? #if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        boolean bExists1 = $!{table.TableVar}ModelRepository.exists(this.example);
+        Assert.assertFalse(bExists1);
+
+        LOGGER.info("test_004_exists_001 004-001-002【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($!table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) AND #end
+#set($cnt=0)
+#foreach($col in $!{table.COlumns})#col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        boolean bExists2 = $!{table.TableVar}ModelRepository.exists(this.exampleName);
+        Assert.assertFalse(bExists2);
+    }
+
+    /**
+     * ステップ005 save
+     */
+    @Test
+    public void test_005_save_001() {
+        LOGGER.info("test_005_save_001 005-001-001【予想】INSERT INTO $!{table.Name} #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end) VALUES(#set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})?#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) , #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})?#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end);");
+        /* save flush saveAndFlush saveAll */
+        $!{table.TableId}Model entity = $!{table.TableVar}ModelRepository.save(model);
+        Assert.assertNotNull(entity);
+        Assert.assertEquals(entity, model);
+        Assert.assertTrue(entity.equals(model));
+        Assert.assertEquals(entity.getId(), model.getId());
+#foreach($col in $!{table.Columns})
+        Assert.assertEquals(entity.get$!{col.ColumnId}(), model.get$!{col.ColumnId}());
+#end
+    }
+
+    /**
+     * ステップ006 findById
+     */
+    @Test
+    public void test_006_findById_002() {
+        LOGGER.info("test_006_findById_002 006-002-001【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #foreach($col in $!{table.PrimaryKeys})$col.Name = ? #if($!cnt < ($table.PrimaryKeys.size()) - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        /* exists existsById findById findAll findOne getOne */
+        Optional<$!{table.TableId}Model> opAft = $!{table.TableVar}ModelRepository.findById(this.modelid);
+        /* nullの場合、NoSuchElementExceptionが発生する。 */
+        $!{table.TableId}Model aft = opAft.get();
+        Assert.assertNotNull(aft);
+        Assert.assertEquals(aft, model);
+        Assert.assertTrue(aft.equals(model));
+        Assert.assertEquals(aft.getId(), model.getId());
+#foreach($col in $!{table.Columns})
+        Assert.assertEquals(aft.get$!{col.ColumnId}(), model.get$!{col.ColumnId}());
+#end
+
+
+        LOGGER.info("test_006_findById_002 006-002-002【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($!table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) AND #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})#col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        List<$!{table.TableId}Model> findAll = $!{table.TableVar}ModelRepository.findAll(this.example);
+        Assert.assertNotNull(findAll);
+        Assert.assertTrue(findAll.size() == 1);
+    }
+
+    /**
+     * ステップ007 exists
+     */
+    @Test
+    public void test_007_exists_002() {
+        LOGGER.info("test_007_exists_002 007-002-001【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #foreach($col in $!{table.PrimaryKeys})$col.Name = ? #if($!cnt < ($table.PrimaryKeys.size()) - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        /* exists existsById findById findAll findOne getOne */
+        boolean bExists1 = $!{table.TableVar}ModelRepository.exists(this.example);
+        Assert.assertTrue(bExists1);
+
+
+        LOGGER.info("test_007_exists_002 007-002-002【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($!table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) AND #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})#col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        boolean bExists2 = $!{table.TableVar}ModelRepository.exists(this.example);
+        Assert.assertTrue(bExists2);
+    }
+
+    /**
+     * ステップ008 save
+     */
+    @Test
+    public void test_008_save_002() {
+        $!{table.TableId}Model model2 = new $!{table.TableId}Model();
+        model2.setId(this.modelid);
+#foreach($!col in ${table.Columns})
+        model2.set$!{col.ColumnId}(#if($!{col.JaraType}=="String")""#else
+null#end);
+#end
+        LOGGER.info("test_008_save_002 008-002-001【予想】UPDATE $!{table.Name} SET#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name = ?#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end;");
+        /* save flush saveAndFlush saveAll */
+        $!{table.TableId}Model entity = $!{table.TableVar}ModelRepository.save(model2);
+        Assert.assertNotNull(entity);
+        Assert.assertEquals(entity, model2);
+        Assert.assertTrue(entity.equals(model2));
+        Assert.assertEquals(entity.getId(), model2.getId());
+#foreach($col in $!{table.Columns})
+        Assert.assertEquals(entity.get$!{col.ColumnId}(), model2.get$!{col.ColumnId}());
+#end
+    }
+
+    /**
+     * ステップ009 delete
+     */
+    @Test(expected=NoSuchElementException.class)
+    public void test_009_delete_002() {
+        LOGGER.info("test_009_delete_002 009-002-001【予想】DELETE FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end;");
+        /* deleteAll */
+        $!{table.TableVar}ModelRepository.delete(model);
+
+
+        LOGGER.info("test_009_delete_002 009-002-002【予想】SELECT #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name#if($cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0), #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name#if($!cnt < ($table.Columns.size() - 1)), #end#set($cnt=$cnt+1)#end FROM $!{table.Name} WHERE #foreach($col in $!{table.PrimaryKeys})$col.Name = ? #if($!cnt < ($table.PrimaryKeys.size()) - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        /* exists existsById findById findAll findOne getOne */
+        Optional<$!{table.TableId}Model> opAft = $!{table.TableVar}ModelRepository.findById(this.modelid);
+        /* nullの場合、NoSuchElementExceptionが発生する。 */
+        $!{table.TableId}Model aft = opAft.get();
+        Assert.assertNull(aft);
+    }
+
+    /**
+     * ステップ010 count
+     */
+    @Test
+    public void test_010_count_002() {
+        LOGGER.info("test_010_count_002 010-002-001【予想】SELECT COUNT(*) FROM $!{table.Name};");
+        cntAft = $!{table.TableVar}ModelRepository.count();
+        Assert.assertTrue(cntAft >= 0L);
+
+        #set($cnt=0)
+        LOGGER.info("test_010_count_002 010-002-002【予想】SELECT COUNT(#foreach($col in $!{table.PrimaryKeys})$col.Name#if($!cnt < ($table.PrimaryKeys.size() - 1)), #end#set($cnt=$cnt+1)#end) FROM $!{table.Name} WHERE #set($cnt=0)
+#foreach($col in $!{table.PrimaryKeys})$col.Name = ?#if($!cnt < ($table.PrimaryKeys.size() - 1)) AND #end#set($cnt=$cnt+1)
+#end
+#if($table.Columns.size() > 0) AND #end
+#set($cnt=0)
+#foreach($col in $!{table.Columns})$col.Name = ?#if($!cnt < ($table.Columns.size() - 1)) AND #end#set($cnt=$cnt+1)#end;");
+        long cntBefModel = $!{table.TableVar}ModelRepository.count(this.example);
+        Assert.assertTrue(cntBefModel >= 0L);
+    }
+#if($methods100.get("$!{table.Schema.PackageName}repository.$!{table.TableId}ModelRepository").size() > 0) #set($cnt=101)
+#foreach($methodMdl in $methods100.get("$!{table.Schema.PackageName}repository.$!{table.TableId}ModelRepository"))
+#if("$!{methodMdl.MethodName}" != "findById")
+
+        /**
+         * ステップ$!{cnt} $!{methodMdl.MethodName}
+         */
+        @Test
+        public void test_$!{cnt}_$!{methodMdl.MethodName}_001() {
+            LOGGER.info("test_$!{cnt}_$!{methodMdl.MethodName}_001 $!{cnt}_001_001【予想】");
+            LOGGER.info("test_$!{cnt}_$!{methodMdl.MethodName}_001 $!{cnt}_001_002【予想】");
+#set($index=0)
+#foreach($param in ${methodMdl.ParamsType})
+#set($paramV = $methodMdl.geParamsVar().get(index))
+            $param $paramV = new $param();
+#set($index=$index+1)
+#end
+#set($index=0)
+            $!{methodMdl.ReturnType} res = $!{table.TableVar}ModelRepository.$!{methodMdl.methodName}(#foreach($param in ${methodMdl.ParamsVar})$param#if($index < $methodMdl.ParamsVar.size() - 1), #end#set($index=$index+1)#end);
+            Assert.assertTrue(res >= 0L);
+            Assert.assertEquals(res, cntAft);
+        }
+#set($cnt=$cnt+1)
+#end
+#end
+#end
+#if($methods200.get("$!{table.Schema.PackageName}repository.$!{table.TableId}ModelRepository").size() > 0) #set($cnt=201)
+#foreach($methodMdl in $methods200.get("$!{table.Schema.PackageName}repository.$!{table.TableId}ModelRepository"))
+#if("$!{methodMdl.MethodName}" != "findById")
+
+        /**
+         * ステップ$!{cnt} $!{methodMdl.MethodName}
+         */
+        @Test
+        public void test_$!{cnt}_$!{methodMdl.MethodName}_001() {
+            LOGGER.info("test_$!{cnt}_$!{methodMdl.MethodName}_001 $!{cnt}_001_001【予想】");
+            LOGGER.info("test_$!{cnt}_$!{methodMdl.MethodName}_001 $!{cnt}_001_002【予想】");
+#set($index=0)
+#foreach($param in ${methodMdl.ParamsType})
+#set($paramV = $methodMdl.geParamsVar().get(index))
+            $param $paramV = new $param();
+#set($index=$index+1)
+#end
+#set($index=0)
+            $!{methodMdl.ReturnType} res = $!{table.TableVar}ModelRepository.$!{methodMdl.methodName}(#foreach($param in ${methodMdl.ParamsVar})$param#if($index < $methodMdl.ParamsVar.size() - 1), #end#set($index=$index+1)#end);
+            Assert.assertTrue(res >= 0L);
+            Assert.assertEquals(res, cntAft);
+        }
+#set($cnt=$cnt+1)
+#end
+#end
+#end
+
     @Test
     @Disabled("for demonstration purposes")
     public void skippedTest() {
         LOGGER.info("call skippedTest()");
         // not executed
     }
+
+    @After
+    public void tearDown() throws Exception {
+#foreach($col in $!{table.PrimaryKeys})
+        this.modelid.set$!{col.ColumnId}(null);
+#end
+        this.model.setId(null);
+#foreach($col in $!{table.Columns})
+        this.model.set$!{col.ColumnId}(null);
+#end
+    }
+
+    @AfterClass
+    public static void tearDownAfterClass() throws Exception {
+        LOGGER.info("$!{table.TableId}ModelRepositoryTest end.");
+    }
+
 }

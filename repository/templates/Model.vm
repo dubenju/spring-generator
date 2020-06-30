@@ -3,15 +3,27 @@ package $!{table.Schema.PackageName}entity;
 import java.io.Serializable;
 
 import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import javax.persistence.Table;
 
 import $!{table.Schema.PackageName}entity.pk.$!{table.TableId}ModelId;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+@ToString
+@Builder(toBuilder = true)
 @Entity
 @Table(name="$!{table.Name}")
 public class $!{table.TableId}Model implements Serializable, CmnColumn {

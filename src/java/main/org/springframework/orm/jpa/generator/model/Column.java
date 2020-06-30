@@ -25,7 +25,7 @@ public class Column {
 
     private Table table;
     private Element element;
-    public String gerColumnId() {
+    public String getColumnId() {
         return Generator.getIdFromName(this.name);
     }
     public String getJavaType() {
